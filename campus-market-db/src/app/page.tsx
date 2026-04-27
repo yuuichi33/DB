@@ -1,57 +1,154 @@
 import Link from "next/link";
+import { listItems, listOrders, listUsers } from "@/lib/marketplace-db";
 
-export default function Home() {
+async function getHomeData() {
+  try {
+    const [items, orders, users] = await Promise.all([
+      listItems(),
+      listOrders(),
+      listUsers(),
+    ]);
+
+    const listedItems = items.length;
+    const inStockItems = items.filter((item) => item.status === 0).length;
+    const soldItems = listedItems - inStockItems;
+    const activeUsers = users.length;
+    const orderCount = orders.length;
+
+    return {
+      listedItems,
+      inStockItems,
+      soldItems,
+      activeUsers,
+      orderCount,
+      hasData: true,
+    };
+  } catch {
+    return {
+      listedItems: 0,
+      inStockItems: 0,
+      soldItems: 0,
+      activeUsers: 0,
+      orderCount: 0,
+      hasData: false,
+    };
+  }
+}
+
+export default async function Home() {
+  const homeData = await getHomeData();
+
   return (
-    <main className="space-y-6">
-      <section className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-2xl font-semibold">项目首页</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          本系统用于完成数据库课程大作业，支持三表展示、数据操作、查询展示、视图查询与购买事务逻辑。
-        </p>
+    <div className="space-y-8 md:space-y-10">
+      <section className="surface-card relative overflow-hidden px-6 py-8 md:px-8 md:py-10">
+        <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#f6d390]/45 blur-2xl" />
+        <div className="absolute -bottom-24 right-14 h-56 w-56 rounded-full bg-[#bce4dd]/65 blur-2xl" />
+
+        <div className="relative z-10 grid gap-8 md:grid-cols-[1.2fr_0.8fr] md:items-center">
+          <div>
+            <p className="font-[var(--font-space-grotesk)] text-sm font-semibold uppercase tracking-[0.17em] text-[#6d5f49]">
+              CAMPUS LOOP
+            </p>
+            <h2 className="section-title mt-3 max-w-xl">
+              在校园里，让每一次闲置流转都更快、更可靠、更安心。
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-[#5f5545] md:text-base">
+              CampusLoop 帮你把闲置商品从“想卖”变成“成交”。从发布、改价、下单到订单追踪，
+              全流程在线完成，交易状态清晰可见。
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/items#publish" className="btn-primary">
+                立即发布商品
+              </Link>
+              <Link href="/items" className="btn-soft">
+                去市场挑选
+              </Link>
+              <Link href="/orders" className="btn-soft">
+                查看订单进度
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
+            <article className="kpi-card">
+              <p className="kpi-label">在架商品</p>
+              <p className="kpi-value">{homeData.inStockItems}</p>
+            </article>
+            <article className="kpi-card">
+              <p className="kpi-label">累计成交</p>
+              <p className="kpi-value">{homeData.soldItems}</p>
+            </article>
+            <article className="kpi-card">
+              <p className="kpi-label">社区用户</p>
+              <p className="kpi-value">{homeData.activeUsers}</p>
+            </article>
+          </div>
+        </div>
       </section>
+
+      {!homeData.hasData ? (
+        <section className="surface-card status-panel-error p-4 text-sm">
+          当前未连接数据库，页面已切换为展示模式。配置好环境变量后会自动恢复实时数据。
+        </section>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Link
-          href="/items"
-          className="rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50"
-        >
-          <h3 className="font-semibold">商品列表</h3>
-          <p className="mt-1 text-sm text-slate-600">查看商品并执行新增、改价、删除、购买操作。</p>
+        <Link href="/items" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
+          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 01</p>
+          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">交易市场</h3>
+          <p className="mt-2 text-sm text-[#5f5545]">查看在售商品，按需发起购买，并实时确认成交状态。</p>
         </Link>
 
-        <Link
-          href="/users"
-          className="rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50"
-        >
-          <h3 className="font-semibold">用户列表</h3>
-          <p className="mt-1 text-sm text-slate-600">展示 User 表所有用户数据。</p>
+        <Link href="/orders" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
+          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 02</p>
+          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">订单中心</h3>
+          <p className="mt-2 text-sm text-[#5f5545]">追踪每笔订单的买卖双方与金额，快速定位最新成交记录。</p>
         </Link>
 
-        <Link
-          href="/orders"
-          className="rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50"
-        >
-          <h3 className="font-semibold">订单列表</h3>
-          <p className="mt-1 text-sm text-slate-600">展示 Orders 表数据和订单详情联查结果。</p>
+        <Link href="/users" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
+          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 03</p>
+          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">社区用户</h3>
+          <p className="mt-2 text-sm text-[#5f5545]">查看用户画像与联系信息，提升交易沟通效率。</p>
         </Link>
 
-        <Link
-          href="/queries"
-          className="rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50"
-        >
-          <h3 className="font-semibold">查询展示</h3>
-          <p className="mt-1 text-sm text-slate-600">通过按钮触发基本、连接、聚合和视图查询。</p>
+        <Link href="/queries" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
+          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 04</p>
+          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">数据洞察</h3>
+          <p className="mt-2 text-sm text-[#5f5545]">通过预设分析视角，快速理解平台供需与成交表现。</p>
         </Link>
       </section>
 
-      <section className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-        <h3 className="font-semibold text-amber-900">部署前必做</h3>
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-amber-900">
-          <li>在数据库中按顺序执行 sql 目录下的 4 个脚本。</li>
-          <li>在 .env.local 中配置 POSTGRES_URL。</li>
-          <li>启动开发服务并验证四个页面均可访问。</li>
-        </ol>
+      <section className="grid gap-4 md:grid-cols-3">
+        <article className="surface-card p-5">
+          <p className="kpi-label">累计发布</p>
+          <p className="kpi-value">{homeData.listedItems}</p>
+          <p className="mt-2 text-sm text-[#5f5545]">历史上架商品总量，反映社区供给活跃度。</p>
+        </article>
+
+        <article className="surface-card p-5">
+          <p className="kpi-label">订单总数</p>
+          <p className="kpi-value">{homeData.orderCount}</p>
+          <p className="mt-2 text-sm text-[#5f5545]">已创建订单的累计数量，用于衡量交易密度。</p>
+        </article>
+
+        <article className="surface-card p-5">
+          <p className="kpi-label">实时状态</p>
+          <p className="mt-3 inline-flex rounded-full border border-[#b8ded6] bg-[#e9f7f3] px-3 py-1 text-sm font-semibold text-[#01564d]">
+            {homeData.hasData ? "数据源在线" : "等待数据库连接"}
+          </p>
+          <p className="mt-2 text-sm text-[#5f5545]">首页会在每次请求时读取最新数据，不需要手动刷新缓存。</p>
+        </article>
       </section>
-    </main>
+
+      <section className="surface-card border-[#f0cb99] bg-[#fff8eb] p-5 md:p-6">
+        <h3 className="text-lg font-semibold text-[#553109]">为什么校园团队选择 CampusLoop</h3>
+        <div className="mt-3 grid gap-3 text-sm text-[#63482a] md:grid-cols-3">
+          <p>发布门槛低：商品信息精简，1 分钟内即可完成上架。</p>
+          <p>交易链路清晰：每次购买自动生成订单并更新商品状态。</p>
+          <p>数据可追溯：用户、商品、订单三类信息可统一查询与复盘。</p>
+        </div>
+      </section>
+    </div>
   );
 }

@@ -1,21 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { JetBrains_Mono, Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { SiteNav } from "@/components/site-nav";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "校园二手交易平台数据库系统",
-  description: "数据库大作业 - Next.js + Vercel Postgres",
+  title: {
+    default: "CampusLoop 校园换物",
+    template: "%s | CampusLoop",
+  },
+  description: "面向校园场景的闲置物品流转平台，让每件好物继续被需要。",
 };
 
 export default function RootLayout({
@@ -26,11 +34,19 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-50 text-slate-900">
-        <SiteNav />
-        <div className="mx-auto w-full max-w-6xl px-4 py-6">{children}</div>
+      <body className="min-h-full bg-background text-foreground">
+        <a href="#main-content" className="skip-link">
+          跳到主要内容
+        </a>
+
+        <div className="page-shell">
+          <SiteNav />
+          <main id="main-content" className="mx-auto w-full max-w-6xl px-4 py-8 md:py-10">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

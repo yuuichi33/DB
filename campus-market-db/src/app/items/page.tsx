@@ -3,8 +3,23 @@ import { listItems, listUsers } from "@/lib/marketplace-db";
 
 export const dynamic = "force-dynamic";
 
-export default async function ItemsPage() {
-  const [items, users] = await Promise.all([listItems(), listUsers()]);
+async function getItemsPageData() {
+  try {
+    const [items, users] = await Promise.all([listItems(), listUsers()]);
+    return { items, users, hasData: true };
+  } catch {
+    return { items: [], users: [], hasData: false };
+  }
+}
 
-  return <ItemsPageClient initialItems={items} initialUsers={users} />;
+export default async function ItemsPage() {
+  const { items, users, hasData } = await getItemsPageData();
+
+  return (
+    <ItemsPageClient
+      initialItems={items}
+      initialUsers={users}
+      hasData={hasData}
+    />
+  );
 }
