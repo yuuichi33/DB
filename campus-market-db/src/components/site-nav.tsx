@@ -11,6 +11,11 @@ const navItems = [
   { href: "/queries", label: "数据洞察" },
 ];
 
+const authItems = [
+  { href: "/login", label: "登录" },
+  { href: "/register", label: "注册" },
+];
+
 export function SiteNav() {
   const pathname = usePathname();
 
@@ -34,6 +39,20 @@ export function SiteNav() {
                 pathname === item.href
                   ? "bg-[#d4efe9] text-[#004d40]"
                   : "text-[#3b3429] hover:bg-[#f3ebdd]"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          {authItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                pathname === item.href
+                  ? "border-[#9ccdc2] bg-[#e8f6f3] text-[#01564d]"
+                  : "border-[var(--line-strong)] text-[#3b3429] hover:bg-[#f3ebdd]"
               }`}
             >
               {item.label}

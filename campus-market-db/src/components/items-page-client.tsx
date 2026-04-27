@@ -24,6 +24,18 @@ function formatPrice(price: number) {
   return `¥${price.toLocaleString("zh-CN")}`;
 }
 
+const itemCategoryOptions = [
+  "Book",
+  "DailyGoods",
+  "Electronics",
+  "Furniture",
+  "Stationery",
+  "Sports",
+  "BeautyAndFashion",
+  "DormEssentials",
+  "Other",
+];
+
 export function ItemsPageClient({
   initialItems,
   initialUsers,
@@ -181,7 +193,13 @@ export function ItemsPageClient({
       }
 
       setNotice("新增商品成功");
-      setNewItem((prev) => ({ ...prev, item_id: "", item_name: "", price: "" }));
+      setNewItem((prev) => ({
+        ...prev,
+        item_id: "",
+        item_name: "",
+        category: "DailyGoods",
+        price: "",
+      }));
       await loadData();
     } catch (err) {
       const message = err instanceof Error ? err.message : "新增商品失败";
@@ -393,14 +411,19 @@ export function ItemsPageClient({
               placeholder="商品名称"
               className="input-field"
             />
-            <input
+            <select
               required
               disabled={isBusy || !hasData}
               value={newItem.category}
               onChange={(e) => setNewItem((prev) => ({ ...prev, category: e.target.value }))}
-              placeholder="分类，例如 Electronics"
-              className="input-field"
-            />
+              className="select-field"
+            >
+              {itemCategoryOptions.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
             <input
               required
               disabled={isBusy || !hasData}

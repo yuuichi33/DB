@@ -95,26 +95,22 @@ export default async function Home() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Link href="/items" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 01</p>
-          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">交易市场</h3>
+          <h3 className="text-lg font-semibold text-[#221d14]">交易市场</h3>
           <p className="mt-2 text-sm text-[#5f5545]">查看在售商品，按需发起购买，并实时确认成交状态。</p>
         </Link>
 
         <Link href="/orders" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 02</p>
-          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">订单中心</h3>
+          <h3 className="text-lg font-semibold text-[#221d14]">订单中心</h3>
           <p className="mt-2 text-sm text-[#5f5545]">追踪每笔订单的买卖双方与金额，快速定位最新成交记录。</p>
         </Link>
 
         <Link href="/users" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 03</p>
-          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">社区用户</h3>
+          <h3 className="text-lg font-semibold text-[#221d14]">社区用户</h3>
           <p className="mt-2 text-sm text-[#5f5545]">查看用户画像与联系信息，提升交易沟通效率。</p>
         </Link>
 
         <Link href="/queries" className="surface-card p-4 transition-transform hover:-translate-y-0.5">
-          <p className="text-xs uppercase tracking-[0.08em] text-[#75664f]">场景 04</p>
-          <h3 className="mt-2 text-lg font-semibold text-[#221d14]">数据洞察</h3>
+          <h3 className="text-lg font-semibold text-[#221d14]">数据洞察</h3>
           <p className="mt-2 text-sm text-[#5f5545]">通过预设分析视角，快速理解平台供需与成交表现。</p>
         </Link>
       </section>
@@ -141,14 +137,6 @@ export default async function Home() {
         </article>
       </section>
 
-      <section className="surface-card border-[#f0cb99] bg-[#fff8eb] p-5 md:p-6">
-        <h3 className="text-lg font-semibold text-[#553109]">为什么校园团队选择 CampusLoop</h3>
-        <div className="mt-3 grid gap-3 text-sm text-[#63482a] md:grid-cols-3">
-          <p>发布门槛低：商品信息精简，1 分钟内即可完成上架。</p>
-          <p>交易链路清晰：每次购买自动生成订单并更新商品状态。</p>
-          <p>数据可追溯：用户、商品、订单三类信息可统一查询与复盘。</p>
-        </div>
-      </section>
     </div>
   );
 }
