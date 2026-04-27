@@ -1,7 +1,7 @@
 "use client";
 
 import { ResultTable } from "@/components/result-table";
-import { ItemRow, UserRow } from "@/lib/marketplace-db";
+import { ItemRow } from "@/lib/marketplace-db";
 import { FormEvent, useMemo, useState } from "react";
 
 type ApiResponse<T> = {
@@ -12,7 +12,6 @@ type ApiResponse<T> = {
 
 type ItemsPageClientProps = {
   initialItems: ItemRow[];
-  initialUsers: UserRow[];
   hasData?: boolean;
 };
 
@@ -38,16 +37,13 @@ const itemCategoryOptions = [
 
 export function ItemsPageClient({
   initialItems,
-  initialUsers,
   hasData = true,
 }: ItemsPageClientProps) {
   const initialUnsold = initialItems.filter((item) => item.status === 0);
-  const defaultSellerId = initialUsers[0]?.user_id ?? "";
   const defaultItemId = initialItems[0]?.item_id ?? "";
   const defaultUnsoldItemId = initialUnsold[0]?.item_id ?? "";
 
   const [items, setItems] = useState<ItemRow[]>(initialItems);
-  const [users, setUsers] = useState<UserRow[]>(initialUsers);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -60,7 +56,6 @@ export function ItemsPageClient({
     item_name: "",
     category: "DailyGoods",
     price: "",
-    seller_id: defaultSellerId,
   });
 
   const [priceForm, setPriceForm] = useState({
@@ -73,7 +68,6 @@ export function ItemsPageClient({
   const [purchaseForm, setPurchaseForm] = useState({
     order_id: "",
     item_id: defaultUnsoldItemId,
-    buyer_id: defaultSellerId,
     order_date: todayString(),
   });
 
@@ -106,11 +100,6 @@ export function ItemsPageClient({
     });
   }, [items, keyword, statusFilter]);
 
-  const effectiveSellerId =
-    newItem.seller_id && users.some((u) => u.user_id === newItem.seller_id)
-      ? newItem.seller_id
-      : (users[0]?.user_id ?? "");
-
   const effectivePriceItemId =
     priceForm.item_id && items.some((i) => i.item_id === priceForm.item_id)
       ? priceForm.item_id
@@ -120,11 +109,6 @@ export function ItemsPageClient({
     deleteItemId && unsoldItems.some((i) => i.item_id === deleteItemId)
       ? deleteItemId
       : (unsoldItems[0]?.item_id ?? "");
-
-  const effectiveBuyerId =
-    purchaseForm.buyer_id && users.some((u) => u.user_id === purchaseForm.buyer_id)
-      ? purchaseForm.buyer_id
-      : (users[0]?.user_id ?? "");
 
   const effectivePurchaseItemId =
     purchaseForm.item_id && unsoldItems.some((i) => i.item_id === purchaseForm.item_id)
@@ -142,24 +126,15 @@ export function ItemsPageClient({
     setError("");
 
     try {
-      const [itemsRes, usersRes] = await Promise.all([
-        fetch("/api/items", { cache: "no-store" }),
-        fetch("/api/users", { cache: "no-store" }),
-      ]);
+      const itemsRes = await fetch("/api/items", { cache: "no-store" });
 
       const itemsJson = (await itemsRes.json()) as ApiResponse<ItemRow[]>;
-      const usersJson = (await usersRes.json()) as ApiResponse<UserRow[]>;
 
       if (!itemsRes.ok || !itemsJson.ok || !itemsJson.data) {
         throw new Error(itemsJson.error ?? "加载商品失败");
       }
 
-      if (!usersRes.ok || !usersJson.ok || !usersJson.data) {
-        throw new Error(usersJson.error ?? "加载用户失败");
-      }
-
       setItems(itemsJson.data);
-      setUsers(usersJson.data);
     } catch (err) {
       const message = err instanceof Error ? err.message : "加载数据失败";
       setError(message);
@@ -180,7 +155,6 @@ export function ItemsPageClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newItem,
-          seller_id: effectiveSellerId,
           price: Number(newItem.price),
           status: 0,
         }),
@@ -290,12 +264,6 @@ export function ItemsPageClient({
       return;
     }
 
-    if (!effectiveBuyerId) {
-      setError("购买失败：当前没有可选买家。");
-      setSubmitting(false);
-      return;
-    }
-
     try {
       const res = await fetch("/api/orders/purchase", {
         method: "POST",
@@ -303,7 +271,6 @@ export function ItemsPageClient({
         body: JSON.stringify({
           ...purchaseForm,
           item_id: effectivePurchaseItemId,
-          buyer_id: effectiveBuyerId,
         }),
       });
 
@@ -336,7 +303,7 @@ export function ItemsPageClient({
             <p className="text-xs uppercase tracking-[0.08em] text-[#6f6556]">Marketplace</p>
             <h2 className="mt-1 text-2xl font-semibold text-[#221d14]">交易市场</h2>
             <p className="mt-2 text-sm text-[#5f5545]">
-              一站式完成发布、改价、下单与库存更新。你可以先完成交易动作，再在下方查看实时商品状态。
+              一站式完成发布、改价、下单与库存更新。游客仅可查看数据，写操作需先登录。
             </p>
           </div>
           <button
@@ -434,21 +401,6 @@ export function ItemsPageClient({
               placeholder="价格"
               className="input-field"
             />
-            <select
-              disabled={isBusy || !hasData}
-              value={effectiveSellerId}
-              onChange={(e) =>
-                setNewItem((prev) => ({ ...prev, seller_id: e.target.value }))
-              }
-              className="select-field sm:col-span-2"
-            >
-              {users.length === 0 ? <option value="">暂无可选卖家</option> : null}
-              {users.map((user) => (
-                <option key={user.user_id} value={user.user_id}>
-                  {user.user_id} - {user.user_name}
-                </option>
-              ))}
-            </select>
           </div>
           <button disabled={isBusy || !hasData} className="btn-primary disabled:cursor-not-allowed disabled:opacity-60">
             {submitting ? "提交中..." : "发布商品"}
@@ -555,21 +507,6 @@ export function ItemsPageClient({
               {unsoldItems.map((item) => (
                 <option key={item.item_id} value={item.item_id}>
                   {item.item_id} - {item.item_name}
-                </option>
-              ))}
-            </select>
-            <select
-              disabled={isBusy || !hasData}
-              value={effectiveBuyerId}
-              onChange={(e) =>
-                setPurchaseForm((prev) => ({ ...prev, buyer_id: e.target.value }))
-              }
-              className="select-field"
-            >
-              {users.length === 0 ? <option value="">暂无可选买家</option> : null}
-              {users.map((user) => (
-                <option key={user.user_id} value={user.user_id}>
-                  {user.user_id} - {user.user_name}
                 </option>
               ))}
             </select>

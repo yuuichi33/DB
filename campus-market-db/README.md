@@ -23,6 +23,7 @@ npm install
 
 ```bash
 POSTGRES_URL="你的PostgreSQL连接串"
+AUTH_SECRET="一个足够复杂的会话密钥"
 ```
 
 ## 三、初始化数据库（按顺序）
@@ -33,8 +34,10 @@ POSTGRES_URL="你的PostgreSQL连接串"
 2. `sql/02_seed.sql`
 3. `sql/03_views.sql`
 4. `sql/04_business_logic.sql`
+5. `sql/05_security_roles.sql`
 
-说明：脚本中已包含主键、外键、唯一约束、status 规则、一致性触发器和购买函数。
+说明：脚本中已包含主键、外键、唯一约束、status 规则、一致性触发器、购买函数和最小权限角色策略（只读/写入）。
+说明补充：`02_seed.sql` 默认种子用户密码为 `Campus123!`。
 
 ## 四、启动项目
 
@@ -51,6 +54,8 @@ npm run dev
 3. `/users`：用户列表
 4. `/orders`：订单列表（含联查展示）
 5. `/queries`：基本查询、连接查询、聚合分组、视图查询
+6. `/login`：登录
+7. `/register`：注册
 
 ## 六、关键业务规则
 
@@ -60,7 +65,9 @@ npm run dev
 4. 购买逻辑通过 SQL 函数 `purchase_item(...)` 完成：
 	- 插入订单
 	- 更新商品 status 为 1
+	- 买家不能是卖家（禁止自卖自买）
 	- 已售商品禁止再次购买
+5. 游客仅允许查询，写操作需登录；写操作身份由服务端会话注入。
 
 ## 七、验证命令
 

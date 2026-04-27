@@ -6,6 +6,10 @@ export type UserRow = {
   phone: string;
 };
 
+export type UserAuthRow = UserRow & {
+  password_hash: string;
+};
+
 export type ItemRow = {
   item_id: string;
   item_name: string;
@@ -66,6 +70,47 @@ export async function listUsers() {
     ORDER BY user_id
   `;
   return result.rows;
+}
+
+export async function getUserById(userId: string) {
+  ensurePostgresEnv();
+  const result = await sql<UserRow>`
+    SELECT user_id, user_name, phone
+    FROM "user"
+    WHERE user_id = ${userId}
+    LIMIT 1
+  `;
+
+  return result.rows[0] ?? null;
+}
+
+export async function getUserAuthByLoginId(loginId: string) {
+  ensurePostgresEnv();
+  const result = await sql<UserAuthRow>`
+    SELECT user_id, user_name, phone, password_hash
+    FROM "user"
+    WHERE user_id = ${loginId} OR phone = ${loginId}
+    ORDER BY user_id
+    LIMIT 1
+  `;
+
+  return result.rows[0] ?? null;
+}
+
+export async function createUser(input: {
+  user_id: string;
+  user_name: string;
+  phone: string;
+  password_hash: string;
+}) {
+  ensurePostgresEnv();
+  const result = await sql<UserRow>`
+    INSERT INTO "user" (user_id, user_name, phone, password_hash)
+    VALUES (${input.user_id}, ${input.user_name}, ${input.phone}, ${input.password_hash})
+    RETURNING user_id, user_name, phone
+  `;
+
+  return result.rows[0];
 }
 
 export async function listItems() {
@@ -133,32 +178,43 @@ export async function insertItem(input: {
   return result.rows[0];
 }
 
-export async function updateItemPrice(itemId: string, newPrice: number) {
+export async function updateItemPrice(
+  itemId: string,
+  newPrice: number,
+  currentUserId: string,
+) {
   ensurePostgresEnv();
   const result = await sql<ItemRow>`
     UPDATE item
     SET price = ${newPrice}
     WHERE item_id = ${itemId}
+      AND seller_id = ${currentUserId}
+      AND status = 0
     RETURNING item_id, item_name, category, price, status, seller_id
   `;
 
   if (result.rows.length === 0) {
-    throw new Error("未找到要改价的商品。");
+    throw new Error("改价失败：仅未售出的本人商品允许改价。");
   }
 
   return result.rows[0];
 }
 
-export async function deleteUnsoldItem(itemId: string) {
+export async function deleteUnsoldItem(itemId: string, currentUserId: string) {
   ensurePostgresEnv();
   const result = await sql<ItemRow>`
     DELETE FROM item
-    WHERE item_id = ${itemId} AND status = 0
+    WHERE item_id = ${itemId}
+      AND status = 0
+      AND seller_id = ${currentUserId}
+      AND NOT EXISTS (
+        SELECT 1 FROM orders o WHERE o.item_id = item.item_id
+      )
     RETURNING item_id, item_name, category, price, status, seller_id
   `;
 
   if (result.rows.length === 0) {
-    throw new Error("删除失败：商品不存在，或该商品不是未售出状态。");
+    throw new Error("删除失败：仅本人未售且未产生订单的商品可删除。");
   }
 
   return result.rows[0];

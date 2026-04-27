@@ -4,8 +4,20 @@
 CREATE TABLE IF NOT EXISTS "user" (
   user_id TEXT PRIMARY KEY,
   user_name TEXT NOT NULL,
-  phone TEXT NOT NULL UNIQUE
+  phone TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL
 );
+
+ALTER TABLE "user"
+ADD COLUMN IF NOT EXISTS password_hash TEXT;
+
+-- 为历史数据补默认密码哈希（默认密码：Campus123!）
+UPDATE "user"
+SET password_hash = 'sha256$init$c05a9b3ad2dd9f02454251ced1ab93ce0aa62b053c38112df69d7041222527df'
+WHERE password_hash IS NULL OR password_hash = '';
+
+ALTER TABLE "user"
+ALTER COLUMN password_hash SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS item (
   item_id TEXT PRIMARY KEY,
@@ -54,6 +66,11 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+  -- 状态单向流转：已售出不能回退为未售出
+  IF OLD.status = 1 AND NEW.status = 0 THEN
+    RAISE EXCEPTION '一致性校验失败：商品状态只能从 0 变为 1，不能从 1 回退到 0';
+  END IF;
+
   -- 如果商品已有订单，不允许改回未售出
   IF NEW.status = 0 AND EXISTS (
     SELECT 1 FROM orders o WHERE o.item_id = NEW.item_id
