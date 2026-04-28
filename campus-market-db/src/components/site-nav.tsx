@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/", label: "发现" },
@@ -16,8 +17,47 @@ const authItems = [
   { href: "/register", label: "注册" },
 ];
 
+type AuthUser = {
+  user_id: string;
+  user_name: string;
+  phone: string;
+};
+
 export function SiteNav() {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadMe() {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const json = (await res.json()) as { ok: boolean; data?: AuthUser };
+        if (!active) {
+          return;
+        }
+
+        if (res.ok && json.ok && json.data) {
+          setCurrentUser(json.data);
+        }
+      } catch {
+        // ignore auth check errors
+      } finally {
+        if (active) {
+          setAuthChecked(true);
+        }
+      }
+    }
+
+    loadMe();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const displayName = currentUser?.user_name || currentUser?.user_id;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#d9cfbe]/80 bg-[#fffdf8]/90 backdrop-blur">
@@ -45,19 +85,27 @@ export function SiteNav() {
             </Link>
           ))}
 
-          {authItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-                pathname === item.href
-                  ? "border-[#9ccdc2] bg-[#e8f6f3] text-[#01564d]"
-                  : "border-[var(--line-strong)] text-[#3b3429] hover:bg-[#f3ebdd]"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {displayName ? (
+            <span className="rounded-lg border border-[#9ccdc2] bg-[#e8f6f3] px-3 py-1.5 text-sm font-medium text-[#01564d]">
+              你好：{displayName}
+            </span>
+          ) : null}
+
+          {authChecked && !displayName
+            ? authItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                    pathname === item.href
+                      ? "border-[#9ccdc2] bg-[#e8f6f3] text-[#01564d]"
+                      : "border-[var(--line-strong)] text-[#3b3429] hover:bg-[#f3ebdd]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))
+            : null}
 
           <Link href="/items#publish" className="btn-primary text-sm">
             发布闲置
