@@ -2,14 +2,8 @@
 
 技术栈：Next.js 16 + Vercel Postgres（`@vercel/postgres`）+ Vercel
 
-当前已完成阶段 1-6：
+已部署在vercel，网页地址： https://campus-market-db-ys.vercel.app/
 
-1. 需求冻结与验收清单
-2. 数据库结构与约束脚本
-3. 项目骨架与数据库接入
-4. 四个核心页面与数据操作
-5. 查询展示（基本/连接/聚合/视图）
-6. 安全性与并发恢复说明文档
 
 ## 一、安装依赖
 
