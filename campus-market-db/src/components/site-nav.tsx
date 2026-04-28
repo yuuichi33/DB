@@ -41,9 +41,13 @@ export function SiteNav() {
 
         if (res.ok && json.ok && json.data) {
           setCurrentUser(json.data);
+        } else {
+          setCurrentUser(null);
         }
       } catch {
-        // ignore auth check errors
+        if (active) {
+          setCurrentUser(null);
+        }
       } finally {
         if (active) {
           setAuthChecked(true);
@@ -55,7 +59,7 @@ export function SiteNav() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [pathname]);
 
   const displayName = currentUser?.user_name || currentUser?.user_id;
 
