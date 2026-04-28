@@ -86,9 +86,17 @@ export function SiteNav() {
           ))}
 
           {displayName ? (
-            <span className="rounded-lg border border-[#9ccdc2] bg-[#e8f6f3] px-3 py-1.5 text-sm font-medium text-[#01564d]">
-              你好：{displayName}
-            </span>
+            <>
+              <span className="rounded-lg border border-[#9ccdc2] bg-[#e8f6f3] px-3 py-1.5 text-sm font-medium text-[#01564d]">
+                你好：{displayName}
+              </span>
+              <Link
+                href="/logout"
+                className="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors border-[var(--line-strong)] text-[#3b3429] hover:bg-[#f3ebdd]"
+              >
+                退出
+              </Link>
+            </>
           ) : null}
 
           {authChecked && !displayName
