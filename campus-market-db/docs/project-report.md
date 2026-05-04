@@ -1,6 +1,6 @@
 # 项目说明
 
-在线访问网址（公开）：
+在线访问网址：
 https://campus-market-db-ys.vercel.app/
 
 ## 1. 从代码到最终网址
