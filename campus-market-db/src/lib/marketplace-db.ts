@@ -30,6 +30,8 @@ export type OrderDetailRow = {
   order_id: string;
   item_id: string;
   item_name: string;
+  seller_id: string;
+  seller_name: string;
   buyer_id: string;
   buyer_name: string;
   order_date: string;
@@ -140,12 +142,15 @@ export async function listOrderDetails() {
       o.order_id,
       o.item_id,
       i.item_name,
+      i.seller_id,
+      s.user_name AS seller_name,
       o.buyer_id,
       u.user_name AS buyer_name,
       o.order_date::text
     FROM orders o
     JOIN item i ON i.item_id = o.item_id
     JOIN "user" u ON u.user_id = o.buyer_id
+    JOIN "user" s ON s.user_id = i.seller_id
     ORDER BY o.order_id
   `;
   return result.rows;
@@ -365,7 +370,6 @@ export async function runAggregateQuery(type: AggregateQueryType) {
         LEFT JOIN item i ON i.seller_id = u.user_id
         GROUP BY u.user_id, u.user_name
         ORDER BY publish_count DESC, u.user_id ASC
-        LIMIT 1
       `;
       return result.rows;
     }

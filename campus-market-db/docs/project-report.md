@@ -21,10 +21,11 @@ https://campus-market-db-ys.vercel.app/
 ## 2. 截图清单（需要附在报告里）
 页面类：
 - 首页（含导航）。
-- 商品列表页（列表 + 统计卡）。
+- 商品列表页（列表 + 统计卡 + 顶部 Filter Bar）。
 - 用户列表页。
-- 订单列表页。
-- 查询展示页。
+- 订单列表页（含筛选栏：商品名/卖家名/单一日期）。
+- 查询展示页（聚合分组 + 视图查询）。
+- 查询页左侧统计报表侧边栏（聚合分组）。
 
 数据操作类：
 - 插入新商品（展示填写与结果）。
@@ -32,22 +33,22 @@ https://campus-market-db-ys.vercel.app/
 - 删除未售商品（展示记录消失）。
 - 购买商品（展示订单新增 + 商品状态变化）。
 
-基本查询（在查询页逐个执行）：
+基本查询（在商品页 Filter Bar 执行）：
 - 查询未售商品。
 - 查询价格 > 30。
 - 查询生活用品类（DailyGoods）。
 - 查询 u001 发布的所有商品。
 
-连接查询：
-- 已售商品与买家姓名。
-- 订单明细（商品 + 买家 + 日期）。
-- 卖家为 u001 的商品是否被购买。
+连接查询（在订单页联查视图与商品页筛选展示）：
+- 已售商品与买家姓名（订单页联查视图）。
+- 订单明细（商品 + 买家 + 日期）（订单页联查视图）。
+- 卖家为 u001 的商品是否被购买（商品页筛选卖家 u001 后查看状态）。
 
 聚合与分组：
 - 统计商品总数。
 - 统计每类商品数量。
 - 计算平均价格。
-- 发布商品数量最多的用户。
+- 发布商品数量排行（按发布数降序列出所有卖家）。
 
 视图：
 - sold_item_view 查询结果。
@@ -69,14 +70,14 @@ https://campus-market-db-ys.vercel.app/
 ## 5. 操作视频录制流程
 1. 用干净浏览器打开在线网址。
 2. 展示首页导航。
-3. 进入商品页，展示列表与统计卡。
+3. 进入商品页，展示列表、统计卡与 Filter Bar（状态/价格区间/类别/卖家筛选）。
 4. 用种子用户登录（例如 u001 / Campus123!）。
 5. 发布新商品。
 6. 修改一个未售商品价格。
 7. 删除一个未售商品。
 8. 退出后用另一用户注册（student001）并购买一件未售商品。
 9. 进入订单页，展示新增订单。
-10. 进入查询页，依次运行基本/连接/聚合/视图查询。
+10. 进入查询页，运行聚合分组与视图查询。
 11. 退出登录后尝试写操作，展示权限错误。
 12. 结束时让地址栏显示在线网址。
 
@@ -137,13 +138,13 @@ https://campus-market-db-ys.vercel.app/
          - 证据：`src/app/api/items/[itemId]/route.ts`, `src/lib/marketplace-db.ts`
       - 操作后刷新页面能看到结果变化：需验证（依赖数据库连接与会话）
 
-   - （三）基本查询（页面交互展示）：已实现（接口与页面），需运行验证
-      - 证据：`src/app/api/queries/basic/route.ts`, `src/lib/marketplace-db.ts`
+   - （三）基本查询（页面交互展示）：已实现（商品页 Filter Bar），需运行验证
+      - 证据：`src/app/api/queries/basic/route.ts`, `src/lib/marketplace-db.ts`, `src/components/items-page-client.tsx`
 
-   - （四）连接查询：已实现，需运行验证
-      - 证据：`src/app/api/queries/join/route.ts`, `src/lib/marketplace-db.ts`
+   - （四）连接查询：已实现（订单页联查视图 + 商品页筛选展示），需运行验证
+      - 证据：`src/app/orders/page.tsx`, `src/components/orders-page-client.tsx`, `src/components/items-page-client.tsx`
 
-   - （五）聚合与分组：已实现，需运行验证
+   - （五）聚合与分组：已实现（查询页左侧统计报表侧边栏），需运行验证
       - 证据：`src/app/api/queries/aggregate/route.ts`, `src/lib/marketplace-db.ts`
 
    - （六）视图：已实现（视图定义 + 查询接口），需运行验证

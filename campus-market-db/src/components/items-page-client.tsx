@@ -23,6 +23,13 @@ function formatPrice(price: number) {
   return `¥${price.toLocaleString("zh-CN")}`;
 }
 
+function parsePriceInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 const itemCategoryOptions = [
   "Book",
   "DailyGoods",
@@ -48,8 +55,11 @@ export function ItemsPageClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [keyword, setKeyword] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "on_sale" | "sold">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "unsold" | "sold">("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sellerFilter, setSellerFilter] = useState("");
 
   const [newItem, setNewItem] = useState({
     item_id: "",
@@ -76,29 +86,58 @@ export function ItemsPageClient({
     [items],
   );
 
+
   const soldItemsCount = items.length - unsoldItems.length;
   const avgPrice =
     items.length > 0
       ? Math.round(items.reduce((sum, item) => sum + item.price, 0) / items.length)
       : 0;
 
+  const rawMinPrice = parsePriceInput(minPrice);
+  const rawMaxPrice = parsePriceInput(maxPrice);
+  const priceRangeError =
+    rawMinPrice !== null && rawMaxPrice !== null && rawMinPrice > rawMaxPrice;
+  const effectiveMinPrice = priceRangeError ? null : rawMinPrice;
+  const effectiveMaxPrice = priceRangeError ? null : rawMaxPrice;
+  const normalizedSeller = sellerFilter.trim().toLowerCase();
+
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      const text = `${item.item_id} ${item.item_name} ${item.category} ${item.seller_id}`.toLowerCase();
-      const matchesKeyword = keyword.trim()
-        ? text.includes(keyword.trim().toLowerCase())
-        : true;
-
       const matchesStatus =
         statusFilter === "all"
           ? true
-          : statusFilter === "on_sale"
+          : statusFilter === "unsold"
             ? item.status === 0
             : item.status === 1;
 
-      return matchesKeyword && matchesStatus;
+      const matchesCategory =
+        categoryFilter === "all" ? true : item.category === categoryFilter;
+
+      const matchesSeller = normalizedSeller
+        ? item.seller_id.toLowerCase().includes(normalizedSeller)
+        : true;
+
+      const matchesMinPrice =
+        effectiveMinPrice !== null ? item.price >= effectiveMinPrice : true;
+      const matchesMaxPrice =
+        effectiveMaxPrice !== null ? item.price <= effectiveMaxPrice : true;
+
+      return (
+        matchesStatus &&
+        matchesCategory &&
+        matchesSeller &&
+        matchesMinPrice &&
+        matchesMaxPrice
+      );
     });
-  }, [items, keyword, statusFilter]);
+  }, [
+    items,
+    statusFilter,
+    categoryFilter,
+    normalizedSeller,
+    effectiveMinPrice,
+    effectiveMaxPrice,
+  ]);
 
   const effectivePriceItemId =
     priceForm.item_id && items.some((i) => i.item_id === priceForm.item_id)
@@ -116,6 +155,13 @@ export function ItemsPageClient({
       : (unsoldItems[0]?.item_id ?? "");
 
   const isBusy = loading || submitting;
+
+  const hasActiveFilters =
+    statusFilter !== "all" ||
+    categoryFilter !== "all" ||
+    sellerFilter.trim() !== "" ||
+    minPrice.trim() !== "" ||
+    maxPrice.trim() !== "";
 
   async function withJson<T>(res: Response): Promise<ApiResponse<T>> {
     return (await res.json()) as ApiResponse<T>;
@@ -303,7 +349,7 @@ export function ItemsPageClient({
             <p className="text-xs uppercase tracking-[0.08em] text-[#6f6556]">Marketplace</p>
             <h2 className="mt-1 text-2xl font-semibold text-[#221d14]">交易市场</h2>
             <p className="mt-2 text-sm text-[#5f5545]">
-              一站式完成发布、改价、下单与库存更新。游客仅可查看数据，写操作需先登录。
+              集中管理商品与库存状态，支持筛选、发布与成交操作。写操作需登录，游客仅可查看。
             </p>
           </div>
           <button
@@ -314,6 +360,99 @@ export function ItemsPageClient({
           >
             {loading ? "刷新中..." : "刷新数据"}
           </button>
+        </div>
+      </section>
+
+      <section className="surface-card p-4 md:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-[#241f18]">筛选栏</h3>
+            <p className="mt-1 text-sm text-[#5f5545]">
+              使用状态、价格区间、类别与卖家条件快速定位商品。
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("all");
+              setMinPrice("");
+              setMaxPrice("");
+              setCategoryFilter("all");
+              setSellerFilter("");
+            }}
+            disabled={!hasActiveFilters}
+            className="btn-outline disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            清空筛选
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[#6f6556]">状态筛选</label>
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as "all" | "unsold" | "sold")
+              }
+              className="select-field"
+            >
+              <option value="all">所有状态</option>
+              <option value="unsold">未售出</option>
+              <option value="sold">已售出</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[#6f6556]">价格区间</label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                min={0}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="最小值"
+                className="input-field"
+              />
+              <input
+                type="number"
+                min={0}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="最大值"
+                className="input-field"
+              />
+            </div>
+            {priceRangeError ? (
+              <p className="text-xs text-[#9f2218]">最小值不能大于最大值。</p>
+            ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[#6f6556]">类别选择</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="select-field"
+            >
+              <option value="all">全部类别</option>
+              {itemCategoryOptions.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[#6f6556]">卖家搜索</label>
+            <input
+              value={sellerFilter}
+              onChange={(e) => setSellerFilter(e.target.value)}
+              placeholder="输入卖家 ID，例如 u001"
+              className="input-field"
+            />
+          </div>
         </div>
       </section>
 
@@ -353,6 +492,56 @@ export function ItemsPageClient({
           {error}
         </p>
       ) : null}
+
+      <section className="surface-card p-4 md:p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-[#241f18]">商品看板</h3>
+            <p className="text-sm text-[#5f5545]">根据筛选栏条件展示商品结果。</p>
+          </div>
+        </div>
+
+        {filteredItems.length === 0 ? (
+          <p className="mt-4 rounded-lg border border-[var(--line)] bg-[#fff8ec] p-4 text-sm text-[#5f5545]">
+            没有匹配商品，试试清空关键词或切换筛选条件。
+          </p>
+        ) : (
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filteredItems.map((item) => (
+              <article key={item.item_id} className="rounded-xl border border-[var(--line)] bg-[#fffdf8] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.06em] text-[#786b58]">{item.item_id}</p>
+                    <h4 className="mt-1 text-base font-semibold text-[#221d14]">{item.item_name}</h4>
+                  </div>
+                  <span
+                    className={`status-badge ${
+                      item.status === 0 ? "status-badge-on" : "status-badge-off"
+                    }`}
+                  >
+                    {item.status === 0 ? "在售" : "已售"}
+                  </span>
+                </div>
+
+                <dl className="mt-3 space-y-1.5 text-sm text-[#5f5545]">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt>分类</dt>
+                    <dd className="font-medium text-[#312a20]">{item.category}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt>价格</dt>
+                    <dd className="font-medium text-[#312a20]">{formatPrice(item.price)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt>卖家</dt>
+                    <dd className="font-medium text-[#312a20]">{item.seller_id}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <form
@@ -515,76 +704,6 @@ export function ItemsPageClient({
             {submitting ? "处理中..." : "下单并更新状态"}
           </button>
         </form>
-      </section>
-
-      <section className="surface-card p-4 md:p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-[#241f18]">商品看板</h3>
-            <p className="text-sm text-[#5f5545]">按关键词和状态快速筛选，优先处理可售库存。</p>
-          </div>
-
-          <div className="flex w-full flex-wrap gap-2 md:w-auto">
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="搜索 ID / 名称 / 分类 / 卖家"
-              className="input-field min-w-[16rem]"
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as "all" | "on_sale" | "sold")
-              }
-              className="select-field min-w-[10rem]"
-            >
-              <option value="all">全部状态</option>
-              <option value="on_sale">仅在售</option>
-              <option value="sold">仅已售</option>
-            </select>
-          </div>
-        </div>
-
-        {filteredItems.length === 0 ? (
-          <p className="mt-4 rounded-lg border border-[var(--line)] bg-[#fff8ec] p-4 text-sm text-[#5f5545]">
-            没有匹配商品，试试清空关键词或切换筛选条件。
-          </p>
-        ) : (
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {filteredItems.map((item) => (
-              <article key={item.item_id} className="rounded-xl border border-[var(--line)] bg-[#fffdf8] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.06em] text-[#786b58]">{item.item_id}</p>
-                    <h4 className="mt-1 text-base font-semibold text-[#221d14]">{item.item_name}</h4>
-                  </div>
-                  <span
-                    className={`status-badge ${
-                      item.status === 0 ? "status-badge-on" : "status-badge-off"
-                    }`}
-                  >
-                    {item.status === 0 ? "在售" : "已售"}
-                  </span>
-                </div>
-
-                <dl className="mt-3 space-y-1.5 text-sm text-[#5f5545]">
-                  <div className="flex items-center justify-between gap-2">
-                    <dt>分类</dt>
-                    <dd className="font-medium text-[#312a20]">{item.category}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt>价格</dt>
-                    <dd className="font-medium text-[#312a20]">{formatPrice(item.price)}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt>卖家</dt>
-                    <dd className="font-medium text-[#312a20]">{item.seller_id}</dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
-        )}
       </section>
 
       {loading ? (
